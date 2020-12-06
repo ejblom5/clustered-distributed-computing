@@ -1,0 +1,61 @@
+import numpy as np
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+name = MPI.Get_processor_name()
+print ("Hello world from process %s running on host %s out of %s processes" %
+       (rank, name, size))
+# array size
+N = 16
+HAS = 1
+HASNOT = 0
+# declare array
+raw_num = np.zeros(N, dtype="int")
+
+local_array = None
+local_tmp = None
+local_tmp_size = np.zeros(1,dtype="int")
+
+if rank == 0:
+    # initlize array
+    raw_num = np.random.randint(low=0,high=N,size=N)
+    print ("Unsorted array ", raw_num)
+# broadcast the contents of unsorted from 0 to other processes
+comm.bcast(raw_num,root=0)
+
+counter = 0
+local_min = rank * (N/size)
+local_max = (rank+1) * (N/size)
+for i in range(N):
+    if raw_num[i] >= local_min and raw_num[i] < local_max:
+        counter = counter + 1 
+print("For rank {rank}  max is {local_max} min is {local_min} and there are {counter} elements in rawNum that falls within max and min")
+'''    
+while (distance >= 1):
+    if (rank % distance == 0 and (rank / distance) % 2 == 0):
+        print ("Rank ", rank, " send to rank ", int(rank + distance))
+        if (local_array is not None):
+            if local_array.size == 1 or np.unique(local_array).size == 1:
+                comm.Send(local_array[0], dest = rank + distance, tag = HASNOT)
+            else:
+            #    print ("median is ", np.median(local_array))
+                local_tmp = local_array[local_array > np.median(local_array)]
+                comm.Send(np.full(shape = 1, fill_value = local_tmp.size, dtype="int"), dest = rank + distance, tag = HAS)
+                comm.Send(local_tmp, dest = rank + distance, tag = HAS)
+                local_array = local_array[local_array <= np.median(local_array)]
+        else:
+            comm.Send(np.zeros(1,dtype="int"), rank + distance, tag = HASNOT)
+    elif (rank % distance == 0 and (rank / distance) % 2 == 1):
+        comm.Recv(local_tmp_size, source = rank - distance, tag = MPI.ANY_TAG, status = status)
+        if status.Get_tag() == HASNOT:
+            continue
+        else:
+            local_array = np.zeros(local_tmp_size[0], dtype="int")
+            comm.Recv(local_array, source = rank - distance, tag = MPI.ANY_TAG, status = status)
+    distance /= 2
+#    print (local_array)
+
+local_array.sort()
+print ("Local array at rank ", rank, ": ", local_array)
+'''
